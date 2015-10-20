@@ -34,7 +34,6 @@ public class Score : MonoBehaviour {
 
     private void DisplayScore()
     {
-        Debug.Log("he modificado el score " + score + this.uiScore);
         this.uiScore.text = "Score : " + score;
     }
 

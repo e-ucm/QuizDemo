@@ -12,16 +12,16 @@ public class AnsQuestion : MonoBehaviour
 
     void Start()
     {
-        tracker = GameObject.Find("Tracker").GetComponent<Tracker>();
+        tracker = GameObject.Find("Tracker").GetComponent<TrackerWithLog>();
     }
 
     public void AnswerTheQuestion(bool result)
     {
-        tracker.Zone(nextScene);
         if (result)
         {
             Score.S.AddScore(correctScore);
             Application.LoadLevel(nextScene);
+            tracker.Zone(nextScene);
 
         } else
         {

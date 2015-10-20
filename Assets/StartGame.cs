@@ -6,9 +6,12 @@ public class StartGame : MonoBehaviour {
 
     private Tracker tracker;
 
+    private UnityEngine.UI.Text sex;
+
     void Start()
     {
-        tracker = GameObject.Find("Tracker").GetComponent<Tracker>();
+        tracker = GameObject.Find("Tracker").GetComponent<TrackerWithLog>();
+        sex = GameObject.Find("SelectedSex").GetComponent<UnityEngine.UI.Text>();
     }
 
     public void InitGame(string sceneName)
@@ -18,7 +21,8 @@ public class StartGame : MonoBehaviour {
         {
             PlayerPrefs.SetInt("LevelScore", 0);
             PlayerPrefs.Save();
-           
+
+            tracker.Choice("Selected sex", sex.text);
             tracker.Choice("Start game", "Start");
             tracker.Zone(sceneName);
             Application.LoadLevel(sceneName);
