@@ -7,7 +7,6 @@ public class Score : MonoBehaviour {
 
     private int score;
     private UnityEngine.UI.Text uiScore;
-    private Tracker tracker;
 
     void Start()
     {
@@ -15,7 +14,6 @@ public class Score : MonoBehaviour {
         this.uiScore = GetComponentInParent<UnityEngine.UI.Text>();
         score = PlayerPrefs.GetInt("LevelScore");
         this.DisplayScore();
-        tracker = GameObject.Find("Tracker").GetComponent<Tracker>();
     }
 
     public void AddScore(int s)
@@ -43,7 +41,7 @@ public class Score : MonoBehaviour {
         {
             PlayerPrefs.SetInt("LevelScore", score);
             PlayerPrefs.Save();
-            tracker.Var("Score", score);
+            Tracker.T().Var("Score", score);
         }
     }
 }

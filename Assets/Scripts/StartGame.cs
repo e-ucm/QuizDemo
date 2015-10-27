@@ -4,13 +4,11 @@ using UnityEngine.UI;
 
 public class StartGame : MonoBehaviour {
 
-    private Tracker tracker;
-
     private UnityEngine.UI.Text sex;
 
     void Start()
     {
-        tracker = GameObject.Find("Tracker").GetComponent<TrackerWithLog>();
+        Tracker.T().Screen("Menu");
         sex = GameObject.Find("SelectedSex").GetComponent<UnityEngine.UI.Text>();
     }
 
@@ -22,10 +20,10 @@ public class StartGame : MonoBehaviour {
             PlayerPrefs.SetInt("LevelScore", 0);
             PlayerPrefs.Save();
 
-            tracker.Choice("Selected sex", sex.text);
-            tracker.Choice("Start game", "Start");
-            tracker.Zone(sceneName);
-            Application.LoadLevel(sceneName);
+            Tracker.T().Choice("Selected sex", sex.text);
+            Tracker.T().Choice("Start game", "Start");
+            Tracker.T().Zone(sceneName);
+            Application.LoadLevel(sceneName);  
         }
     }
 }

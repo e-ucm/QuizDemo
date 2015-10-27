@@ -2,19 +2,22 @@
 /// Gleaner Tracker Unity implementation.
 /// </summary>
 using System;
+using System.Net;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Collections;
+using SimpleJSON;
 
 public class Tracker : MonoBehaviour
 {
 	public interface ITraceFormatter
 	{
 		string Serialize (List<string> traces);
+
+		void StartData (JSONNode data);
 	}
 	
-	public const string start = "start/";
-	public const string track = "track/";
-	private Net net;
+	private Storage storage;
 	private ITraceFormatter traceFormatter;
 	private bool sending;
 	private bool connected;
@@ -24,48 +27,68 @@ public class Tracker : MonoBehaviour
 	private List<string> sent = new List<string> ();
 	private float nextFlush;
 	public float flushInterval = -1;
+	public string storageType = "local";
+	public string traceFormat = "csv";
 	public string host;
 	public string trackingCode;
-	public string authorization;
-	public string traceFormat = "json";
 	public Boolean debug = false;
-	private Dictionary<string, string> trackHeaders = new Dictionary<string, string> ();
 	private StartListener startListener;
 	private FlushListener flushListener;
+	private static Tracker tracker;
+
+	public static Tracker T(){
+		return tracker;
+	}
 
 	public Tracker ()
 	{
-		startListener = new StartListener (this);
 		flushListener = new FlushListener (this);
-		trackHeaders.Add ("Content-Type", "application/json");
-		switch (traceFormat) {
-		case "json":
-			traceFormatter = new SimpleJsonFormat ();
-			break;
-		default:
-			traceFormatter = new DefaultTraceFromat ();
-			break;
-		}
+		startListener = new StartListener (this);
+		tracker = this;
+	}
 
-        
-    }
-
-	private void SetAuthToken (string authToken)
+	private void SetConnected (bool connected)
 	{
-		if (authToken != null) {
-			trackHeaders.Add ("Authorization", authToken);
-			connected = true;
-		}
+		this.connected = connected;
 		connecting = false;
 	}
 
 	public void Start ()
 	{
-        this.nextFlush = flushInterval;
-		this.net = new Net (this);
+		switch (storageType) {
+		case "net":
+			storage = new NetStorage (this, host, trackingCode);
+			break;
+		default:
+			String path = Application.persistentDataPath;
+			if (!path.EndsWith("/")){
+				path += "/";
+			}
+			path += "traces-" + traceFormat;
+			if (debug) {
+				Debug.Log ("Storing traces in " + path );
+			}
+			storage = new LocalStorage (path);
+			break;
+		}
+		storage.SetTracker (this);
+
+		switch (traceFormat) {
+		case "json":
+			traceFormatter = new SimpleJsonFormat ();
+			break;
+		case "xapi":
+			traceFormatter = new XApiFormat ();
+			break;
+		default:
+			traceFormatter = new DefaultTraceFromat ();
+			break;
+		}
+		startListener.SetTraceFormatter (traceFormatter);
+		this.nextFlush = flushInterval;
 		this.Connect ();
-        UnityEngine.Object.DontDestroyOnLoad(this);
-    }
+		UnityEngine.Object.DontDestroyOnLoad (this);
+	}
 
 	public void Update ()
 	{
@@ -97,12 +120,10 @@ public class Tracker : MonoBehaviour
 	{
 		if (!connected && !connecting) {
 			connecting = true;
-			Dictionary<string, string> headers = new Dictionary<string, string> ();
-			headers.Add ("Authorization", authorization);
 			if (debug) {
-				Debug.Log ("Connecting to " + host);
+				Debug.Log ("Connecting to collector...");
 			}
-			net.POST (host + start + trackingCode, null, headers, startListener);
+			storage.Start (startListener);
 		}
 	}
 
@@ -125,7 +146,7 @@ public class Tracker : MonoBehaviour
 			if (debug) {
 				Debug.Log (data);
 			}
-			net.POST (host + track, System.Text.Encoding.UTF8.GetBytes (data), trackHeaders, flushListener);
+			storage.Send (data, flushListener);
 		}
 	}
 
@@ -133,7 +154,7 @@ public class Tracker : MonoBehaviour
 	{
 		if (!error) {
 			if (debug) {
-				Debug.Log ("Traces received by the server.");
+				Debug.Log ("Traces received by storage.");
 			}
 			sent.Clear ();
 		} else if (debug) {
@@ -146,10 +167,16 @@ public class Tracker : MonoBehaviour
 	{
 
 		private Tracker tracker;
+		private ITraceFormatter traceFormatter;
 
 		public StartListener (Tracker tracker)
 		{
 			this.tracker = tracker;
+		}
+
+		public void SetTraceFormatter (ITraceFormatter traceFormatter)
+		{
+			this.traceFormatter = traceFormatter;
 		}
 
 		public void Result (string data)
@@ -157,8 +184,12 @@ public class Tracker : MonoBehaviour
 			if (tracker.debug) {
 				Debug.Log ("Start successfull");
 			}
-			var dict = MiniJSON.Json.Deserialize (data) as Dictionary<string,object>;
-			tracker.SetAuthToken ((string)dict ["authToken"]);
+			try {
+				JSONNode dict = JSONNode.Parse (data);
+				ProcessData (dict);			            
+			} catch (Exception e) {
+			}
+			tracker.SetConnected (true);
 		}
 		
 		public void Error (string error)
@@ -166,7 +197,12 @@ public class Tracker : MonoBehaviour
 			if (tracker.debug) {
 				Debug.Log ("Error " + error);
 			}
-			tracker.SetAuthToken (null);
+			tracker.SetConnected (false);
+		}
+
+		protected virtual void ProcessData (JSONNode data)
+		{
+			traceFormatter.StartData (data);
 		}
 	}
 
@@ -197,7 +233,7 @@ public class Tracker : MonoBehaviour
 	/// Adds a trace to the queue.
 	/// </summary>
 	/// <param name="trace">A comma separated string with the values of the trace</param>
-	public virtual void Trace (string trace)
+	public void Trace (string trace)
 	{
 		if (debug) {
 			Debug.Log ("'" + trace + "' added to the queue.");
