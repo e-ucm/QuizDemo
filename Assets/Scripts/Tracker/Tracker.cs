@@ -1,12 +1,11 @@
 /// <summary>
 /// Gleaner Tracker Unity implementation.
 /// </summary>
-using System;
-using System.Net;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Collections;
 using SimpleJSON;
+using System;
 
 public class Tracker : MonoBehaviour
 {
@@ -42,8 +41,8 @@ public class Tracker : MonoBehaviour
 
 	public Tracker ()
 	{
-		flushListener = new FlushListener (this);
-		startListener = new StartListener (this);
+		this.flushListener = new FlushListener (this);
+		this.startListener = new StartListener (this);
 		tracker = this;
 	}
 
@@ -55,42 +54,78 @@ public class Tracker : MonoBehaviour
 
 	public void Start ()
 	{
-		switch (storageType) {
-		case "net":
-			storage = new NetStorage (this, host, trackingCode);
-			break;
-		default:
-			String path = Application.persistentDataPath;
-			if (!path.EndsWith("/")){
-				path += "/";
-			}
-			path += "traces-" + traceFormat;
-			if (debug) {
-				Debug.Log ("Storing traces in " + path );
-			}
-			storage = new LocalStorage (path);
-			break;
-		}
-		storage.SetTracker (this);
-
 		switch (traceFormat) {
-		case "json":
-			traceFormatter = new SimpleJsonFormat ();
-			break;
-		case "xapi":
-			traceFormatter = new XApiFormat ();
-			break;
-		default:
-			traceFormatter = new DefaultTraceFromat ();
-			break;
+		    case "json":
+			    this.traceFormatter = new SimpleJsonFormat ();
+			    break;
+		    case "xapi":
+                this.traceFormatter = new XApiFormat ();
+			    break;
+		    default:
+                this.traceFormatter = new DefaultTraceFromat ();
+			    break;
 		}
-		startListener.SetTraceFormatter (traceFormatter);
+        switch (storageType)
+        {
+            case "net":
+                CreateNetStorage();
+                break;
+            default:
+                String path = Application.persistentDataPath;
+                if (!path.EndsWith("/"))
+                {
+                    path += "/";
+                }
+                path += "traces-" + traceFormat;
+                if (debug)
+                {
+                    Debug.Log("Storing traces in " + path);
+                }
+                storage = new LocalStorage(path);
+                storage.SetTracker(this);
+                break;
+        }
+        this.startListener.SetTraceFormatter (this.traceFormatter);
 		this.nextFlush = flushInterval;
-		this.Connect ();
-		UnityEngine.Object.DontDestroyOnLoad (this);
+		//this.Connect ();
+		UnityEngine.Object.DontDestroyOnLoad (tracker);
 	}
 
-	public void Update ()
+    private void CreateNetStorage()
+    {
+        Debug.Log("--Exist the file--> "+ Application.dataPath + "/Assets/track.txt ??");
+        string filePath = Application.dataPath + "/Assets/track.txt";
+
+        //WWW www = new WWW(filePath);
+        //local, windows files
+        WWW www = new WWW("file:///"+filePath);
+        this.StartCoroutine(WaitForRequest(www));
+    }
+
+    private IEnumerator WaitForRequest(WWW www)
+    {
+        yield return www;
+        // check for errors
+        if (www.error == null)
+        {
+            string line = www.text;
+            string[] readLine = line.Split(';');
+            if (readLine.Length == 2)
+            {
+                host = readLine[0];
+                trackingCode = readLine[1];
+            }
+            storage = new NetStorage(this, host, trackingCode);
+            storage.SetTracker(this);
+            this.Connect();
+        }
+        else
+        {
+            Debug.LogError("--ErrorWaitForRequest--> "+www.error);
+        }
+    }
+
+    public void Update ()
 	{
 		float delta = Time.deltaTime;
 		if (flushInterval >= 0) {
@@ -121,9 +156,9 @@ public class Tracker : MonoBehaviour
 		if (!connected && !connecting) {
 			connecting = true;
 			if (debug) {
-				Debug.Log ("Connecting to collector...");
+				Debug.Log ("Connecting to collector... in host"+host);
 			}
-			storage.Start (startListener);
+			storage.Start (this.startListener);
 		}
 	}
 
@@ -172,12 +207,13 @@ public class Tracker : MonoBehaviour
 		public StartListener (Tracker tracker)
 		{
 			this.tracker = tracker;
-		}
+        }
 
 		public void SetTraceFormatter (ITraceFormatter traceFormatter)
 		{
+            Debug.Log("--SetTraceFormatter--> "+traceFormatter.ToString());
 			this.traceFormatter = traceFormatter;
-		}
+        }
 
 		public void Result (string data)
 		{
@@ -186,10 +222,11 @@ public class Tracker : MonoBehaviour
 			}
 			try {
 				JSONNode dict = JSONNode.Parse (data);
-				ProcessData (dict);			            
+                this.ProcessData (dict);			            
 			} catch (Exception e) {
-			}
-			tracker.SetConnected (true);
+                Debug.LogError("--ErrorTrackerResult--> "+e);
+            }
+            tracker.SetConnected (true);
 		}
 		
 		public void Error (string error)
@@ -200,10 +237,17 @@ public class Tracker : MonoBehaviour
 			tracker.SetConnected (false);
 		}
 
-		protected virtual void ProcessData (JSONNode data)
+		protected void ProcessData (JSONNode data)
 		{
-			traceFormatter.StartData (data);
-		}
+            Debug.Log("--ProcessData-->" + data.ToString());
+            if (traceFormatter == null)
+            {
+                Debug.Log("--ProcessDataTraceFormatterNull--> " + traceFormatter);
+                traceFormatter = new XApiFormat();
+            }
+            traceFormatter.StartData(data);
+            
+        }
 	}
 
 	public class FlushListener : Net.IRequestListener
@@ -229,11 +273,11 @@ public class Tracker : MonoBehaviour
 
 	/* Traces */
 
-	/// <summary>
-	/// Adds a trace to the queue.
-	/// </summary>
-	/// <param name="trace">A comma separated string with the values of the trace</param>
-	public void Trace (string trace)
+        /// <summary>
+        /// Adds a trace to the queue.
+        /// </summary>
+        /// <param name="trace">A comma separated string with the values of the trace</param>
+    public void Trace (string trace)
 	{
 		if (debug) {
 			Debug.Log ("'" + trace + "' added to the queue.");

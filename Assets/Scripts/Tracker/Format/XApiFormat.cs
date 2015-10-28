@@ -22,8 +22,10 @@ public class XApiFormat : Tracker.ITraceFormatter
 
     public void StartData(JSONNode data)
     {
+        Debug.Log("--StartData--");
         actor = data["actor"];
-        activityId = (string)data["activityId"];
+        Debug.Log("--ACTOR--> " + actor.ToString());
+        activityId = data["objectId"].ToString();
         if (!activityId.EndsWith("/"))
         {
             activityId += "/";

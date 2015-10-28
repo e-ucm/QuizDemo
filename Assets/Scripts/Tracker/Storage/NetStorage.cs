@@ -69,11 +69,14 @@ public class NetStorage : Storage
 			this.storage = storage;
 		}
 
-		protected override void ProcessData (JSONNode dict)
+		protected void ProcessData (JSONNode dict)
 		{
-			storage.SetAuthToken ((string)dict ["authToken"]);
-			base.ProcessData (dict);
-		}
+            Debug.Log("PROCESSDATA--BEFORE--OVERRIDE");
+			storage.SetAuthToken (dict ["authToken"].ToString());
+            Debug.Log("PROCESSDATA--AFTER--OVERRIDE");
+            base.ProcessData (dict);
+            Debug.Log("PROCESSDATA--EXIT--OVERRIDE");
+        }
 	}
 }
 
