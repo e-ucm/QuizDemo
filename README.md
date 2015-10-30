@@ -26,6 +26,8 @@ The configuration process is very similar to the [Lost in Space](https://github.
 The [track.txt](https://github.com/e-ucm/QuizDemo/blob/master/Assets/Assets/track.txt) file must be edited changing the `host` and `trackingCode` 
 with the correct values. Normaly the `host` looks like this `http://localhost:3000/api/proxy/gleaner/collector/` and the `trackingCode` normally looks like [this](https://github.com/e-ucm/rage-analytics/wiki/Tracking-code).
 
+For more tracker information and options see [unity-tracker](https://github.com/e-ucm/unity-tracker).
+
 ### Second: The Game ###
 
 All the interactions in the screens send xApi traces. This traces can be seen at the top panel (xApi Console).
@@ -50,8 +52,6 @@ For each question correctly answered the score increses. Each time a question is
 The maximum achievable score is 100.
 
 For every interaction an xAPI statement is sent to the collector server and tracked by the [real-time module](https://github.com/e-ucm/rage-analytics-realtime) - if correctly configured.
-
-There is also an upper console that logs all the statements that have been sent to the collector server.
 
 The xAPI statements sent have the following format:
 
