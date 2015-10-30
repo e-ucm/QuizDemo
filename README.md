@@ -47,7 +47,7 @@ The xAPI statements sent have the following format:
 ![xapicat](https://cloud.githubusercontent.com/assets/5657407/10850458/14203f50-7f26-11e5-9a26-f13d55161e76.png)
 
 
-### Configure the tracking code and the lost ###
+### Configure the tracking code and the host ###
 
 The configuration process is very similar to the [Lost in Space](https://github.com/e-ucm/rage-analytics/wiki/Tracking-code#setting-up-the-tracking-code).
 
