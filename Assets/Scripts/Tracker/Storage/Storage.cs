@@ -2,16 +2,17 @@ using System;
 
 public interface Storage
 {
-	void SetTracker(Tracker tracker);
-
+	void SetTracker (Tracker tracker);
+	
 	/// <summary>
 	/// The tracker wants to start sending traces
 	///</summary>
-	void Start(Tracker.StartListener startListener);
-
+	void Start (Net.IRequestListener startListener);
+	
 	///<summary>
 	/// The tracker wants to send the given data
 	///</summary>
-	void Send(String data, Tracker.FlushListener flushListener);
+	void Send (String data, Net.IRequestListener flushListener);
 
+	bool IsAvailable();
 }

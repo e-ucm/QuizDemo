@@ -1,6 +1,6 @@
+using System;
 using System.Collections.Generic;
 using SimpleJSON;
-using UnityEngine;
 
 public class DefaultTraceFromat : Tracker.ITraceFormatter
 {
@@ -15,5 +15,6 @@ public class DefaultTraceFromat : Tracker.ITraceFormatter
 
     public void StartData(JSONNode data)
     {
+
     }
 }

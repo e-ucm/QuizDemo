@@ -8,127 +8,103 @@ public class XApiFormat : Tracker.ITraceFormatter
 	string ZONE = "zone";
 	string CHOICE = "choice";
 	string VAR = "var";
-
 	public static string VOCAB_PREFIX = "http://purl.org/xapi/games/";
-
 	public static string VERB_PREFIX = VOCAB_PREFIX + "verbs/";
-
 	public static string EXT_PREFIX = VOCAB_PREFIX + "ext/";
-
-	private List<JSONNode> statements = new List<JSONNode>();
-
+	private List<JSONNode> statements = new List<JSONNode> ();
 	private string objectId;
 	private JSONNode actor;
 
-	public void StartData(JSONNode data)
+	public void StartData (JSONNode data)
 	{
-		actor = data["actor"];
-		objectId = data["objectId"].ToString();
-		if (!objectId.EndsWith("/"))
-		{
+		actor = data ["actor"];
+		objectId = data ["objectId"].ToString ();
+		if (!objectId.EndsWith ("/")) {
 			objectId += "/";
 		}
 	}
 
-	public string Serialize(List<string> traces)
+	public string Serialize (List<string> traces)
 	{
-		statements.Clear();
+		statements.Clear ();
 
-		foreach (string trace in traces)
-		{
-			statements.Add(CreateStatement(trace));
+		foreach (string trace in traces) {
+			statements.Add (CreateStatement (trace));
 		}
 
 		string result = "[";
-		foreach (JSONNode statement in statements)
-		{
-			result += statement.ToString() + ",";
+		foreach (JSONNode statement in statements) {
+			result += statement.ToString () + ",";
 		}
-		return result.Substring(0, result.Length - 1).Replace("[\n\t]", "").Replace(": ", ":") + "]";
+		return result.Substring (0, result.Length - 1).Replace ("[\n\t]", "").Replace (": ", ":") + "]";
 	}
 
-	private JSONNode CreateStatement(string trace)
+	private JSONNode CreateStatement (string trace)
 	{
-		JSONNode statement = JSONNode.Parse("{}");
+		string[] parts = trace.Split (',');
+		string timestamp = new System.DateTime (1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc).AddMilliseconds (long.Parse (parts [0])).ToString ("yyyy-MM-ddTHH:mm:ss.fffZ");
 
-		statement.Add("actor", actor);
+		JSONNode statement = JSONNode.Parse ("{\"timestamp\": \"" + timestamp + "\"}");
 
-		string[] parts = trace.Split(',');
+		if (actor != null) {
+			statement.Add ("actor", actor);		      
+		}
+		statement.Add ("verb", CreateVerb (parts [1]));
 
-		statement.Add("verb", CreateVerb(parts[0]));
 
-		statement.Add("object", CreateActivity(parts));
+		statement.Add ("object", CreateActivity (parts));
 
-		if (parts.Length > 2)
-		{
-			JSONNode extensions = JSONNode.Parse("{}");
-			JSONNode extensionsChild = JSONNode.Parse("{}");
-			extensionsChild.Add(EXT_PREFIX + "value", parts[2]);
+		if (parts.Length > 3) {
+			JSONNode extensions = JSONNode.Parse ("{}");
+			JSONNode extensionsChild = JSONNode.Parse ("{}");
+			extensionsChild.Add (EXT_PREFIX + "value", parts [3]);
 
-			extensions.Add("extensions", extensionsChild);
+			extensions.Add ("extensions", extensionsChild);
 
-			statement.Add("result", extensions);
+			statement.Add ("result", extensions);
 		}
 
 		return statement;
 	}
 
-	private JSONNode CreateVerb(string ev)
+	private JSONNode CreateVerb (string ev)
 	{
 
 		string id;
-		if (CHOICE.Equals(ev))
-		{
+		if (CHOICE.Equals (ev)) {
 			id = "choose";
-		}
-		else if (SCREEN.Equals(ev))
-		{
+		} else if (SCREEN.Equals (ev)) {
 			id = "viewed";
-		}
-		else if (ZONE.Equals(ev))
-		{
+		} else if (ZONE.Equals (ev)) {
 			id = "entered";
-		}
-		else if (VAR.Equals(ev))
-		{
+		} else if (VAR.Equals (ev)) {
 			id = "updated";
-		}
-		else
-		{
+		} else {
 			id = ev;
 		}
 
-		JSONNode verb = JSONNode.Parse("{ id : }");
-		verb["id"] = VERB_PREFIX + id;
+		JSONNode verb = JSONNode.Parse ("{ id : }");
+		verb ["id"] = VERB_PREFIX + id;
 
 		return verb;
 	}
 
-	private JSONNode CreateActivity(string[] parts)
+	private JSONNode CreateActivity (string[] parts)
 	{
-		string ev = parts[0];
+		string ev = parts [1];
 		string id;
-		if (CHOICE.Equals(ev))
-		{
+		if (CHOICE.Equals (ev)) {
 			id = "choice";
-		}
-		else if (SCREEN.Equals(ev))
-		{
+		} else if (SCREEN.Equals (ev)) {
 			id = "screen";
-		}
-		else if (ZONE.Equals(ev))
-		{
+		} else if (ZONE.Equals (ev)) {
 			id = "zone";
-		}
-		else if (VAR.Equals(ev))
-		{
+		} else if (VAR.Equals (ev)) {
 			id = "variable";
-		}
-		else
-		{
+		} else {
 			id = ev;
 		}
-		return JSONNode.Parse("{ id : " + objectId + id + "/" + parts[1] + "}");
+		return JSONNode.Parse ("{ id : " + objectId + id + "/" + parts [2] + "}");
 	}
 }
 
