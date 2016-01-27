@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using SimpleJSON;
 using UnityEngine;
+using System.Collections;
 
 public class NetStorage : Storage
 {
@@ -12,7 +13,7 @@ public class NetStorage : Storage
 	private string trackingCode;
 	private string authorization;
 	private NetStartListener netStartListener;
-	private Dictionary<string, string> trackHeaders = new Dictionary<string, string>();
+	private Dictionary<string,string> trackHeaders = new Dictionary<string, string> ();
 
 	/// <summary>
 	/// </summary>
@@ -20,29 +21,61 @@ public class NetStorage : Storage
 	/// <param name="host">Host of the collector server.</param>
 	/// <param name="trackingCode">Tracking code for the game.</param>
 	/// <param name="authorization">Authorization to start the tracking.</param>
-	public NetStorage(MonoBehaviour behaviour, string host, string trackingCode)
+	public NetStorage (MonoBehaviour behaviour, string host, string trackingCode)
 	{
-		this.net = new Net(behaviour);
+		this.net = new Net (behaviour);
 		this.host = host;
 		this.trackingCode = trackingCode;
 		this.authorization = "a:";
+
+		string filePath = Application.dataPath + "/Assets/track.txt";
+
+		if (Application.platform != RuntimePlatform.WebGLPlayer)
+		{
+			filePath = "file:///" + filePath;
+		}
+
+		WWW www = new WWW(filePath);
+
+		behaviour.StartCoroutine(WaitForRequest(www));
 	}
 
-	public void SetTracker(Tracker tracker)
+	/*
+	* If exist /Assets/tracker.txt in the root of proyect folder with the format
+	*          host;trackingCode
+	* the tracker will use this host and trackingCode for the connection.
+	*/
+	private IEnumerator WaitForRequest(WWW www)
 	{
-		netStartListener = new NetStartListener(tracker, this);
-		trackHeaders.Add("Content-Type", "application/json");
+		yield return www;
+		// check for errors
+		if (www.error == null)
+		{
+			string line = www.text;
+			string[] readLine = line.Split(';');
+			if (readLine.Length == 2)
+			{
+				host = readLine[0];
+				trackingCode = readLine[1];
+			}
+		}
 	}
 
-	public void Start(Tracker.StartListener startListener)
+	public void SetTracker (Tracker tracker)
 	{
-		Dictionary<string, string> headers = new Dictionary<string, string>();
-		headers.Add("Authorization", authorization);
-		netStartListener.SetTraceFormatter(startListener.GetTraceFormatter());
-		net.POST(host + start + trackingCode, null, headers, netStartListener);
+		netStartListener = new NetStartListener (tracker, this);
+		netStartListener.SetTraceFormatter (tracker.GetTraceFormatter());
+		trackHeaders.Add ("Content-Type", "application/json");
 	}
 
-	public void Send(String data, Tracker.FlushListener flushListener)
+	public void Start (Net.IRequestListener startListener)
+	{
+		Dictionary<string,string> headers = new Dictionary<string, string> ();
+		headers.Add ("Authorization", authorization);		
+		net.POST (host + start + trackingCode, null, headers, netStartListener);
+	}
+
+	public void Send (String data, Net.IRequestListener flushListener)
 	{
 		string tmpData = data.Replace("{\"actor", "${\"actor").Replace("[", "").Replace("]", "");
 		string[] tmpArray = tmpData.Split('$');
@@ -50,31 +83,41 @@ public class NetStorage : Storage
 		{
 			if (action != "")
 			{
-				Log.L().AddLogLine(action);
+				Log.L().AddLogLine("net: " + action);
 			}
 		}
-		net.POST(host + track, System.Text.Encoding.UTF8.GetBytes(data), trackHeaders, flushListener);
+		net.POST (host + track, System.Text.Encoding.UTF8.GetBytes (data), trackHeaders, flushListener);
 	}
 
-	private void SetAuthToken(string authToken)
+	private void SetAuthToken (string authToken)
 	{
-		trackHeaders.Add("Authorization", authToken);
-	}
+		trackHeaders["Authorization"] = authToken;
+    }
 
 	public class NetStartListener : Tracker.StartListener
 	{
 		private NetStorage storage;
 
-		public NetStartListener(Tracker tracker, NetStorage storage) : base(tracker)
+		public NetStartListener (Tracker tracker, NetStorage storage) : base(tracker)
 		{
 			this.storage = storage;
 		}
 
-		protected override void ProcessData(JSONNode dict)
+		protected override void ProcessData (JSONNode dict)
 		{
-			storage.SetAuthToken(dict["authToken"]);
-			base.ProcessData(dict);
+			storage.SetAuthToken (dict ["authToken"]);
+			base.ProcessData (dict);
 		}
+	}
+
+	public bool IsAvailable()
+	{
+		if (Application.internetReachability == NetworkReachability.ReachableViaCarrierDataNetwork ||
+			Application.internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork)
+		{
+			return true;
+		}
+		return false;
 	}
 }
 
