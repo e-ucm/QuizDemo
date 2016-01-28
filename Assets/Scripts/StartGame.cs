@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
-using System.Collections;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class StartGame : MonoBehaviour
 {
@@ -24,7 +24,7 @@ public class StartGame : MonoBehaviour
 			Tracker.T().Choice("Selected sex", sex.text);
 			Tracker.T().Choice("Start game", "Start");
 			Tracker.T().Zone(sceneName);
-			Application.LoadLevel(sceneName);
+			SceneManager.LoadScene(sceneName);
 		}
 	}
 }
