@@ -381,64 +381,239 @@ public class Tracker : MonoBehaviour
 		Trace (result);
 	}
 
-	/// <summary>
-	/// Player entered in a screen.
-	/// </summary>
-	/// <param name="screenId">Screen identifier.</param>
-	public void Screen (string screenId)
-	{
-		Trace ("screen", screenId);
-	}
+    /* VARIABLES */
 
-	/// <summary>
-	/// Player entered in a zone inside the game world.
-	/// </summary>
-	/// <param name="zoneid">Zone identifier.</param>
-	public void Zone (string zoneId)
-	{
-		Trace ("zone", zoneId);
-	}
+    public enum VariableTypes
+    {
+        Score,
+        Currency,
+        Health,
+        Attempt,
+        Preference,
+        Position,
+        Variable
+    }
 
-	/// <summary>
-	/// Player selected an option in a presented choice
-	/// </summary>
-	/// <param name="choiceId">Choice identifier.</param>
-	/// <param name="optionId">Option identifier.</param>
-	public void Choice (string choiceId, string optionId)
-	{
-		Trace ("choice", choiceId, optionId);
-	}
+    /// <summary>
+    /// A meaningful variable was updated in the game.
+    /// </summary>
+    /// <param name="varName">Variable name.</param>
+    /// <param name="value">New value for the variable.</param>
+    public void Set(string varName, System.Object value)
+    {
+        Trace("set", VariableTypes.Variable.ToString().ToLower(), varName, value.ToString());
+    }
 
-	/// <summary>
-	/// A meaningful variable was updated in the game.
-	/// </summary>
-	/// <param name="varName">Variable name.</param>
-	/// <param name="value">New value for the variable.</param>
-	public void Var (string varName, System.Object value)
-	{
-		Trace ("var", varName, value.ToString ());
-	}
+    /// <summary>
+    /// A meaningful variable was updated in the game.
+    /// </summary>
+    /// <param name="varName">Variable name.</param>
+    /// <param name="value">New value for the variable.</param>
+    /// <param name="type">The variable type.</param>
+    public void Set(string varName, System.Object value, VariableTypes type)
+    {
+        Trace("set", type.ToString().ToLower(), varName, value.ToString());
+    }
 
-	/// <summary>
-	/// Logs that the user clicked with the mouse/touched a particular target (e.g. an enemy, an ally, a button of the HUD, etc.).
-	/// </summary>
-	/// <param name="x">Horizontal coordinate of the mouse or touch event, in the game's coordinate system</param>
-	/// <param name="y">Vertical coordinate of the mouse or touch event, in the game's coordinate system</param>
-	/// <param name="target">Id of the element that was hit by the click.</param>
-	public void Click (float x, float y, string target)
-	{
-		Trace ("click", x.ToString (), y.ToString (), target);
-	}
+    /// <summary>
+    /// A meaningful variable was increased in the game.
+    /// </summary>
+    /// <param name="varName">Variable name.</param>
+    /// <param name="value">The amount that was increased.</param>
+    public void Increased(string varName, float value)
+    {
+        Trace("increased", VariableTypes.Variable.ToString().ToLower(), varName, value.ToString());
+    }
 
-	/// <summary>
-	/// Logs that the user clicked with the mouse/tocuhed a particular point in the game scene. If an identified element is at that point, use <see cref="Tracker.Click(float,float,string)"/>
-	/// </summary>
-	/// <param name="x">Horizontal coordinate of the mouse or touch event, in the game's coordinate system</param>
-	/// <param name="y">Vertical coordinate of the mouse or touch event, in the game's coordinate system</param>
-	public void Click (float x, float y)
-	{
-		Trace ("click", x.ToString (), y.ToString ());
-	}
+    /// <summary>
+    /// A meaningful variable was increased in the game.
+    /// </summary>
+    /// <param name="varName">Variable name.</param>
+    /// <param name="value">The amount that was increased.</param>
+    /// <param name="type">The variable type.</param>
+    public void Increased(string varName, float value, VariableTypes type)
+    {
+        Trace("increased", type.ToString().ToLower(), varName, value.ToString(),);
+    }
+
+    /// <summary>
+    /// A meaningful variable was decreased in the game.
+    /// </summary>
+    /// <param name="varName">Variable name.</param>
+    /// <param name="value">The amount that was decreased.</param>
+    public void Decreased(string varName, float value)
+    {
+        Trace("decreased", VariableTypes.Variable.ToString().ToLower(), varName, value.ToString());
+    }
+
+    /// <summary>
+    /// A meaningful variable was decreased in the game.
+    /// </summary>
+    /// <param name="varName">Variable name.</param>
+    /// <param name="value">The amount that was decreased.</param>
+    /// <param name="type">The variable type.</param>
+    public void Decreased(string varName, float value, VariableTypes type)
+    {
+        Trace("decreased", type.ToString().ToLower(), varName, value.ToString());
+    }
+
+
+    /* ALTERNATIVES */
+
+    public enum AlternativeTypes
+    {
+        Question,
+        Menu,
+        Dialog,
+        Path,
+        Arena,
+        Alternative
+    }
+
+    /// <summary>
+    /// Player selected an option in a presented alternative
+    /// </summary>
+    /// <param name="alternativeId">Alternative identifier.</param>
+    /// <param name="optionId">Option identifier.</param>
+    public void Selected(string alternativeId, string optionId)
+    {
+        Trace("selected", AlternativeTypes.Alternative.ToString().ToLower(), alternativeId,  optionId);
+    }
+
+    /// <summary>
+    /// Player selected an option in a presented alternative
+    /// </summary>
+    /// <param name="alternativeId">Alternative identifier.</param>
+    /// <param name="optionId">Option identifier.</param>
+    /// <param name="type">Alternative type.</param>
+    public void Selected(string alternativeId, string optionId, AlternativeTypes type)
+    {
+        Trace("selected", type.ToString().ToLower(), alternativeId, optionId);
+    }
+
+    /* COMPLETABLES */
+
+    public enum CompletableTypes
+    {
+        Game,
+        Session,
+        Level,
+        Quest,
+        Stage,
+        Combat,
+        StoryNode,
+        Race,
+        Completable
+    }
+
+    /// <summary>
+    /// Player started a completable.
+    /// </summary>
+    /// <param name="completableId">Completable identifier.</param>
+    public void Started(string completableId)
+    {
+        Trace("started", CompletableTypes.Completable.ToString().ToLower(), completableId);
+    }
+
+    /// <summary>
+    /// Player started a completable.
+    /// </summary>
+    /// <param name="completableId">Completable identifier.</param>
+    /// <param name="type">Completable type.</param>
+    public void Started(string completableId, CompletableTypes type)
+    {
+        Trace("started", type.ToString().ToLower(), completableId);
+    }
+
+    /// <summary>
+    /// Player progressed a completable.
+    /// </summary>
+    /// <param name="completableId">Completable identifier.</param>
+    /// <param name="value">New value for the completable's progress.</param>
+    public void Progressed(string completableId, float value)
+    {
+        Trace("progressed", CompletableTypes.Completable.ToString().ToLower(), completableId, value.ToString());
+    }
+
+    /// <summary>
+    /// Player progressed a completable.
+    /// </summary>
+    /// <param name="completableId">Completable identifier.</param>
+    /// <param name="value">New value for the completable's progress.</param>
+    /// <param name="type">Completable type.</param>
+    public void Progressed(string completableId, float value, CompletableTypes type)
+    {
+        Trace("progressed", type.ToString().ToLower(), completableId, value.ToString());
+    }
+
+    /// <summary>
+    /// Player completed a completable.
+    /// </summary>
+    /// <param name="completableId">Completable identifier.</param>
+    public void Completed(string completableId)
+    {
+        Trace("completed", CompletableTypes.Completable.ToString().ToLower(), completableId);
+    }
+
+    /// <summary>
+    /// Player completed a completable.
+    /// </summary>
+    /// <param name="completableId">Completable identifier.</param>
+    /// <param name="type">Completable type.</param>
+    public void Completed(string completableId, CompletableTypes type)
+    {
+        Trace("completed", type.ToString().ToLower(), completableId);
+    }
+
+
+    /* REACHABLES */
+
+    public enum ReachableTypes
+    {
+        Screen,
+        Area,
+        Zone,
+        Cutscene,
+        Reachable
+    }
+
+    /// <summary>
+    /// Player accessed a reachable.
+    /// </summary>
+    /// <param name="reachableId">Reachable identifier.</param>
+    public void Accessed(string reachableId)
+    {
+        Trace("accessed", ReachableTypes.Reachable.ToString().ToLower(), reachableId);
+    }
+
+    /// <summary>
+    /// Player accessed a reachable.
+    /// </summary>
+    /// <param name="reachableId">Reachable identifier.</param>
+    /// <param name="type">Reachable type.</param>
+    public void Accessed(string reachableId, ReachableTypes type)
+    {
+        Trace("accessed", type.ToString().ToLower(), reachableId);
+    }
+
+    /// <summary>
+    /// Player skipped a reachable.
+    /// </summary>
+    /// <param name="reachableId">Reachable identifier.</param>
+    public void Skipped(string reachableId)
+    {
+        Trace("skipped", ReachableTypes.Reachable.ToString().ToLower(), reachableId);
+    }
+
+    /// <summary>
+    /// Player skipped a reachable.
+    /// </summary>
+    /// <param name="reachableId">Reachable identifier.</param>
+    /// <param name="type">Reachable type.</param>
+    public void Skipped(string reachableId, ReachableTypes type)
+    {
+        Trace("skipped", type.ToString().ToLower(), reachableId);
+    }
 }
 
 

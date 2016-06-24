@@ -8,14 +8,108 @@ public class XApiFormat : Tracker.ITraceFormatter
 	string ZONE = "zone";
 	string CHOICE = "choice";
 	string VAR = "var";
-	public static string VOCAB_PREFIX = "http://purl.org/xapi/games/";
-	public static string VERB_PREFIX = VOCAB_PREFIX + "verbs/";
-	public static string EXT_PREFIX = VOCAB_PREFIX + "ext/";
-	private List<JSONNode> statements = new List<JSONNode> ();
+    private Dictionary<string, string> verbIds = new Dictionary<string, string>()
+    {
+        { "started", "http://activitystrea.ms/schema/1.0/started"},
+        { "progressed", "http://adlnet.gov/expapi/verbs/progressed"},
+        { "completed", "http://adlnet.gov/expapi/verbs/completed"},
+        { "accessed", "http://activitystrea.ms/schema/1.0/accessed"},
+        { "skipped", "http://id.tincanapi.com/verb/skipped"},
+        { "set", "https://rage.e-ucm.es/xapi/seriousgames/verbs/set"},
+        { "decreased", "https://rage.e-ucm.es/xapi/seriousgames/verbs/decreased"},
+        { "increased", "https://rage.e-ucm.es/xapi/seriousgames/verbs/increased"},
+        { "preferred", "http://adlnet.gov/expapi/verbs/preferred"}
+    };
+    private Dictionary<string, string> objectIds = new Dictionary<string, string>()
+    {
+        { "started", "http://activitystrea.ms/schema/1.0/started"},
+        { "progressed", "http://adlnet.gov/expapi/verbs/progressed"},
+        { "completed", "http://adlnet.gov/expapi/verbs/completed"},
+        { "accessed", "http://activitystrea.ms/schema/1.0/accessed"},
+        { "skipped", "http://id.tincanapi.com/verb/skipped"},
+        { "set", "https://rage.e-ucm.es/xapi/seriousgames/verbs/set"},
+        { "decreased", "https://rage.e-ucm.es/xapi/seriousgames/verbs/decreased"},
+        { "increased", "https://rage.e-ucm.es/xapi/seriousgames/verbs/increased"},
+        { "preferred", "http://adlnet.gov/expapi/verbs/preferred"}
+    };
+    private List<JSONNode> statements = new List<JSONNode> ();
 	private string objectId;
 	private JSONNode actor;
 
-	public void StartData (JSONNode data)
+    public enum Extension
+    {
+        HEALTH, POSITION, PROGRESS
+
+
+        public override string ToString()
+    {
+        switch (this)
+        {
+            case HEALTH:
+                return "https://w3id.org/xapi/seriousgames/extensions/health";
+            case POSITION:
+                return "https://w3id.org/xapi/seriousgames/extensions/position";
+            case PROGRESS:
+                return "https://w3id.org/xapi/seriousgames/extensions/progress";
+        }
+        return "";
+    }
+}
+
+public class Result
+    {
+        float score = float.NaN;
+        // -1 = NULL, 0 = false, 1 true
+        int success = -1;
+        int completion;
+
+        string response;
+        Dictionary<string, Object> extensions;
+
+        public override string ToString()
+        {
+            string s = "\"result\":{";
+            if (float.IsNaN(score))
+            {
+                s += "\"score\":{\"raw\":" + score + "},";
+            }
+
+            if (success != -1)
+            {
+                s += "\"success\":" + success + ",";
+            }
+
+            if (completion != -1)
+            {
+                s += "\"completion\":" + completion + ",";
+            }
+
+            if (response != null)
+            {
+                s += "\"response\": \"" + response + "\",";
+            }
+
+            if (extensions != null)
+            {
+                s += "\"extensions\":{";
+                foreach (KeyValuePair<string, Object> e in extensions)
+                {
+                    s += "\"" + e.Key + "\":";
+                    if (e.Value is string)
+                    {
+                        s += "\"" + e.Value + "\"";
+                    } else {
+                        s += e.Value.ToString();
+                    }
+                s += ",";
+            }
+            s = s.Substring(0, s.Length - 1) + "},";
+        }
+			return s.Substring(0, s.Length - 1) + "},";
+		}
+    }
+
+public void StartData (JSONNode data)
 	{
 		actor = data ["actor"];
 		objectId = data ["objectId"].ToString ();
@@ -49,7 +143,7 @@ public class XApiFormat : Tracker.ITraceFormatter
 		if (actor != null) {
 			statement.Add ("actor", actor);		      
 		}
-		statement.Add ("verb", CreateVerb (parts [1]));
+		statement.Add ("verb", CreateVerb (parts [2]));
 
 
 		statement.Add ("object", CreateActivity (parts));
@@ -70,28 +164,18 @@ public class XApiFormat : Tracker.ITraceFormatter
 	private JSONNode CreateVerb (string ev)
 	{
 
-		string id;
-		if (CHOICE.Equals (ev)) {
-			id = "choose";
-		} else if (SCREEN.Equals (ev)) {
-			id = "viewed";
-		} else if (ZONE.Equals (ev)) {
-			id = "entered";
-		} else if (VAR.Equals (ev)) {
-			id = "updated";
-		} else {
-			id = ev;
-		}
+        string id = ev;
+        bool found = verbIds.TryGetValue(ev, out id);
 
 		JSONNode verb = JSONNode.Parse ("{ id : }");
-		verb ["id"] = VERB_PREFIX + id;
+		verb ["id"] = id;
 
 		return verb;
 	}
 
 	private JSONNode CreateActivity (string[] parts)
 	{
-		string ev = parts [1];
+		string ev = parts [2];
 		string id;
 		if (CHOICE.Equals (ev)) {
 			id = "choice";
