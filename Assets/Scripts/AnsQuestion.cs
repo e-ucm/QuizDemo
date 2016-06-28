@@ -14,9 +14,9 @@ public class AnsQuestion : MonoBehaviour
 		{
 			Score.S.AddScore(correctScore);
 			Application.LoadLevel(nextScene);
-			Tracker.T().Zone(nextScene);
+            Tracker.T.accessible.Accessed(nextScene);
 
-		}
+        }
 		else
 		{
 			Score.S.AddScore(incorrectScore);
@@ -25,6 +25,6 @@ public class AnsQuestion : MonoBehaviour
 
 	public void TrackChoice(string optionId)
 	{
-		Tracker.T().Choice(questionId, optionId);
-	}
+        Tracker.T.alternative.Selected(questionId, optionId);
+    }
 }

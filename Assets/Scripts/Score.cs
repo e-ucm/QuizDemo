@@ -41,7 +41,7 @@ public class Score : MonoBehaviour {
         {
             PlayerPrefs.SetInt("LevelScore", score);
             PlayerPrefs.Save();
-            Tracker.T().Var("Score", score);
+            Tracker.T.setScore(score);
         }
     }
 }
