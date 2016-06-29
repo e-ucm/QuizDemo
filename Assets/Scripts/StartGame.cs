@@ -9,7 +9,7 @@ public class StartGame : MonoBehaviour
 
 	void Start()
 	{
-		Tracker.T().Screen("Menu");
+		Tracker.T.accessible.Accessed("Menu");
 		sex = GameObject.Find("SelectedSex").GetComponent<UnityEngine.UI.Text>();
 	}
 
@@ -21,9 +21,9 @@ public class StartGame : MonoBehaviour
 			PlayerPrefs.SetInt("LevelScore", 0);
 			PlayerPrefs.Save();
 
-			Tracker.T().Choice("Selected sex", sex.text);
-			Tracker.T().Choice("Start game", "Start");
-			Tracker.T().Zone(sceneName);
+			Tracker.T.alternative.Selected("Selected sex", sex.text);
+			Tracker.T.alternative.Selected("Start game", "Start");
+			Tracker.T.accessible.Accessed(sceneName);
 			Application.LoadLevel(sceneName);
 		}
 	}

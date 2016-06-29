@@ -1,25 +1,45 @@
+/*
+ * Copyright 2016 e-UCM (http://www.e-ucm.es/)
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * This project has received funding from the European Union’s Horizon
+ * 2020 research and innovation programme under grant agreement No 644187.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0 (link is external)
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /// <summary>
 /// Gleaner Tracker Unity implementation.
 /// </summary>
 using System.Collections.Generic;
 using UnityEngine;
-using System.Collections;
 using SimpleJSON;
 using System;
-using System.IO;
 
 public class Tracker : MonoBehaviour
 {
 	public static DateTime START_DATE = new DateTime (1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-	public interface ITraceFormatter
+    public interface ITraceFormatter
 	{
 		string Serialize (List<string> traces);
 
 		void StartData (JSONNode data);
 	}
 
-	private Storage mainStorage;
+    public interface IGameObjectTracker
+    {
+        void setTracker(Tracker tracker);
+    }
+
+    private Storage mainStorage;
 	private LocalStorage backupStorage;
 	private ITraceFormatter traceFormatter;
 	private bool sending;
@@ -45,10 +65,16 @@ public class Tracker : MonoBehaviour
 	private static Tracker tracker;
 	private String filePath;
 	private StartLocalStorageListener startLocalStorageListener;
+    private Dictionary<string, System.Object> extensions = new Dictionary<string, System.Object>();
 
-	public static Tracker T ()
+    public CompletableTracker completable;
+    public AlternativeTracker alternative;
+    public AccessibleTracker accessible;
+    public GameObjectTracker trackedGameObject;
+
+    public static Tracker T
 	{
-		return tracker;
+		get { return tracker; }
 	}
 
 	public Tracker ()
@@ -56,8 +82,24 @@ public class Tracker : MonoBehaviour
 		flushListener = new FlushListener (this);
 		startListener = new StartListener (this);
 		startLocalStorageListener = new StartLocalStorageListener(this);
-		tracker = this;
+        completable = new CompletableTracker();
+        completable.setTracker(this);
+        alternative = new AlternativeTracker();
+        alternative.setTracker(this);
+        accessible = new AccessibleTracker();
+        accessible.setTracker(this);
+        trackedGameObject = new GameObjectTracker();
+        trackedGameObject.setTracker(this);
+        tracker = this;
 	}
+
+    void Awake ()
+    {
+        if(tracker == null)
+        {
+            tracker = this;
+        }
+    }
 
 	public ITraceFormatter GetTraceFormatter ()
 	{
@@ -365,6 +407,26 @@ public class Tracker : MonoBehaviour
 		if (debug) {
 			Debug.Log ("'" + trace + "' added to the queue.");
 		}
+        if(extensions.Count > 0)
+        {
+            string extContent = "";
+            foreach (KeyValuePair<string, System.Object> e in extensions)
+            {
+                string key = e.Key.ToString();
+                if (key.Equals(""))
+                {
+                    continue;
+                }
+                string value = e.Value.ToString();
+                if (value.Equals(""))
+                {
+                    continue;
+                }
+                extContent = extContent + ("," + key + "," + value);
+            }
+            trace = trace + "," + extContent;
+            extensions.Clear();
+        }
 		queue.Add (trace);
 	}
 
@@ -381,64 +443,102 @@ public class Tracker : MonoBehaviour
 		Trace (result);
 	}
 
-	/// <summary>
-	/// Player entered in a screen.
-	/// </summary>
-	/// <param name="screenId">Screen identifier.</param>
-	public void Screen (string screenId)
-	{
-		Trace ("screen", screenId);
-	}
+    public enum Verb
+    {
+        Initialized,
+        Progressed,
+        Completed,
+        Accessed,
+        Skipped,
+        Selected,
+        Unlocked,
+        Interacted,
+        Used
+    }
 
-	/// <summary>
-	/// Player entered in a zone inside the game world.
-	/// </summary>
-	/// <param name="zoneid">Zone identifier.</param>
-	public void Zone (string zoneId)
-	{
-		Trace ("zone", zoneId);
-	}
+    public enum Extension
+    {
+        /* Special extensions, 
+           those extensions are stored reparatedly in xAPI, e.g.:
+           result: {
+                score: {
+                    raw: <score_value: float>
+                },
+                success: <success_value: bool>,
+                completion: <completion_value: bool>,
+                response: <response_value: string>
+                ...
+           }
+        
+            
+        */
+        Score,
+        Success,
+        Response,
+        Completion,
 
-	/// <summary>
-	/// Player selected an option in a presented choice
-	/// </summary>
-	/// <param name="choiceId">Choice identifier.</param>
-	/// <param name="optionId">Option identifier.</param>
-	public void Choice (string choiceId, string optionId)
-	{
-		Trace ("choice", choiceId, optionId);
-	}
+        /* Common extensions, these extensions are stored 
+           in the result.extensions object (in the xAPI format), e.g.:
 
-	/// <summary>
-	/// A meaningful variable was updated in the game.
-	/// </summary>
-	/// <param name="varName">Variable name.</param>
-	/// <param name="value">New value for the variable.</param>
-	public void Var (string varName, System.Object value)
-	{
-		Trace ("var", varName, value.ToString ());
-	}
+           result: {
+                ...
+                extensions: {
+                    .../health: <value>,
+                    .../position: <value>,
+                    .../progress: <value>
+                }
+           }
+        */
+        Health,
+        Position,
+        Progress
+    }
 
-	/// <summary>
-	/// Logs that the user clicked with the mouse/touched a particular target (e.g. an enemy, an ally, a button of the HUD, etc.).
-	/// </summary>
-	/// <param name="x">Horizontal coordinate of the mouse or touch event, in the game's coordinate system</param>
-	/// <param name="y">Vertical coordinate of the mouse or touch event, in the game's coordinate system</param>
-	/// <param name="target">Id of the element that was hit by the click.</param>
-	public void Click (float x, float y, string target)
-	{
-		Trace ("click", x.ToString (), y.ToString (), target);
-	}
+    public void setSuccess(bool success)
+    {
+        setExtension(Extension.Success.ToString().ToLower(), success);
+    }
 
-	/// <summary>
-	/// Logs that the user clicked with the mouse/tocuhed a particular point in the game scene. If an identified element is at that point, use <see cref="Tracker.Click(float,float,string)"/>
-	/// </summary>
-	/// <param name="x">Horizontal coordinate of the mouse or touch event, in the game's coordinate system</param>
-	/// <param name="y">Vertical coordinate of the mouse or touch event, in the game's coordinate system</param>
-	public void Click (float x, float y)
-	{
-		Trace ("click", x.ToString (), y.ToString ());
-	}
+    public void setScore(float score)
+    {
+        setExtension(Extension.Score.ToString().ToLower(), score);
+    }
+
+    public void setResponse(string response)
+    {
+        setExtension(Extension.Response.ToString().ToLower(), response);
+    }
+
+    public void setCompletion(bool completion)
+    {
+        setExtension(Extension.Completion.ToString().ToLower(), completion);
+    }
+
+    public void setProgress(float progress)
+    {
+        setExtension(Extension.Progress.ToString().ToLower(), progress);
+    }
+
+    public void setPosition(float x, float y, float z)
+    {
+        setExtension(Extension.Position.ToString().ToLower(), "{\"x\":" + x + ", \"y\": " + y
+                + ", \"z\": " + z + "}");
+    }
+
+    public void setHealth(float health)
+    {
+        setExtension(Extension.Health.ToString().ToLower(), health);
+    }
+
+    public void setVar(string id, string value)
+    {
+        setExtension(id, value);
+    }    
+
+    public void setExtension(string key, System.Object value)
+    {
+        extensions.Add(key, value);
+    }
 }
 
 
