@@ -25,14 +25,14 @@ using System;
 
 public class Tracker : MonoBehaviour
 {
-	public static DateTime START_DATE = new DateTime (1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+    public static DateTime START_DATE = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     public interface ITraceFormatter
-	{
-		string Serialize (List<string> traces);
+    {
+        string Serialize(List<string> traces);
 
-		void StartData (JSONNode data);
-	}
+        void StartData(JSONNode data);
+    }
 
     public interface IGameObjectTracker
     {
@@ -40,31 +40,31 @@ public class Tracker : MonoBehaviour
     }
 
     private Storage mainStorage;
-	private LocalStorage backupStorage;
-	private ITraceFormatter traceFormatter;
-	private bool sending;
-	private bool connected;
-	private bool connecting;
-	private bool flushRequested;
-	private bool useMainStorage;
-	private List<string> queue = new List<string> ();
-	private List<string> sent = new List<string> ();
-	private List<string> allTraces = new List<string>();
-	private float nextFlush;
-	public float flushInterval = -1;
-	[Range(3, int.MaxValue)]
-	public float checkInterval = 3;
-	private float nextCheck;
-	public string storageType = "local";
-	public string traceFormat = "csv";
-	public string host;
-	public string trackingCode;
-	public Boolean debug = false;
-	private StartListener startListener;
-	private FlushListener flushListener;
-	private static Tracker tracker;
-	private String filePath;
-	private StartLocalStorageListener startLocalStorageListener;
+    private LocalStorage backupStorage;
+    private ITraceFormatter traceFormatter;
+    private bool sending;
+    private bool connected;
+    private bool connecting;
+    private bool flushRequested;
+    private bool useMainStorage;
+    private List<string> queue = new List<string>();
+    private List<string> sent = new List<string>();
+    private List<string> allTraces = new List<string>();
+    private float nextFlush;
+    public float flushInterval = -1;
+    [Range(3, int.MaxValue)]
+    public float checkInterval = 3;
+    private float nextCheck;
+    public string storageType = "local";
+    public string traceFormat = "csv";
+    public string host;
+    public string trackingCode;
+    public Boolean debug = false;
+    private StartListener startListener;
+    private FlushListener flushListener;
+    private static Tracker tracker;
+    private String filePath;
+    private StartLocalStorageListener startLocalStorageListener;
     private Dictionary<string, System.Object> extensions = new Dictionary<string, System.Object>();
 
     public CompletableTracker completable;
@@ -73,15 +73,15 @@ public class Tracker : MonoBehaviour
     public GameObjectTracker trackedGameObject;
 
     public static Tracker T
-	{
-		get { return tracker; }
-	}
+    {
+        get { return tracker; }
+    }
 
-	public Tracker ()
-	{
-		flushListener = new FlushListener (this);
-		startListener = new StartListener (this);
-		startLocalStorageListener = new StartLocalStorageListener(this);
+    public Tracker()
+    {
+        flushListener = new FlushListener(this);
+        startListener = new StartListener(this);
+        startLocalStorageListener = new StartLocalStorageListener(this);
         completable = new CompletableTracker();
         completable.setTracker(this);
         alternative = new AlternativeTracker();
@@ -91,323 +91,362 @@ public class Tracker : MonoBehaviour
         trackedGameObject = new GameObjectTracker();
         trackedGameObject.setTracker(this);
         tracker = this;
-	}
+    }
 
-    void Awake ()
+    void Awake()
     {
-        if(tracker == null)
+        if (tracker == null)
         {
             tracker = this;
         }
     }
 
-	public ITraceFormatter GetTraceFormatter ()
-	{
-		return this.traceFormatter;
-	}
+    public ITraceFormatter GetTraceFormatter()
+    {
+        return this.traceFormatter;
+    }
 
-	private void SetMainStorageConnected (bool connected)
-	{
-		useMainStorage = connected;
-		SetConnected (connected || this.connected);
-	}
+    private void SetMainStorageConnected(bool connected)
+    {
+        useMainStorage = connected;
+        SetConnected(connected || this.connected);
+    }
 
-	private void SetConnected (bool connected)
-	{
-		this.connected = connected;
-		connecting = false;
-	}
-	
-	public void Start ()
-	{
-		switch (traceFormat) {
-		case "json":
-			this.traceFormatter = new SimpleJsonFormat ();
-			break;
-		case "xapi":
-			this.traceFormatter = new XApiFormat ();
-			break;
-		default:
-			this.traceFormatter = new DefaultTraceFromat ();
-			break;
-		}
-		filePath = GeneratePath ();
-		switch (storageType) {
-		case "net":
-			filePath += "Pending";
-			mainStorage = new NetStorage (this, host, trackingCode);
-			mainStorage.SetTracker (this);
-			backupStorage = new LocalStorage (filePath);
-			backupStorage.SetTracker (this);
-			break;
-		default:
-			mainStorage = new LocalStorage (filePath);
-			mainStorage.SetTracker (this);
-			break;
-		}
-		
-		this.startListener.SetTraceFormatter (this.traceFormatter);
-		this.Connect ();
-		this.nextFlush = flushInterval;
+    private void SetConnected(bool connected)
+    {
+        this.connected = connected;
+        connecting = false;
+    }
 
-		UnityEngine.Object.DontDestroyOnLoad (this);
-	}
+    public void Start()
+    {
+        switch (traceFormat)
+        {
+            case "json":
+                this.traceFormatter = new SimpleJsonFormat();
+                break;
+            case "xapi":
+                this.traceFormatter = new XApiFormat();
+                break;
+            default:
+                this.traceFormatter = new DefaultTraceFromat();
+                break;
+        }
+        filePath = GeneratePath();
+        switch (storageType)
+        {
+            case "net":
+                filePath += "Pending";
+                mainStorage = new NetStorage(this, host, trackingCode);
+                mainStorage.SetTracker(this);
+                backupStorage = new LocalStorage(filePath);
+                backupStorage.SetTracker(this);
+                break;
+            default:
+                mainStorage = new LocalStorage(filePath);
+                mainStorage.SetTracker(this);
+                break;
+        }
 
-	public string GeneratePath ()
-	{
-		String path = Application.persistentDataPath;
+        this.startListener.SetTraceFormatter(this.traceFormatter);
+        this.Connect();
+        this.nextFlush = flushInterval;
+
+        UnityEngine.Object.DontDestroyOnLoad(this);
+    }
+
+    public string GeneratePath()
+    {
+        String path = Application.persistentDataPath;
 #if UNITY_ANDROID
 		AndroidJavaObject env = new AndroidJavaObject ("android.os.Environment");
 		AndroidJavaObject file = env.CallStatic<AndroidJavaObject> ("getExternalStorageDirectory");
 		path = file.Call<String> ("getAbsolutePath");
 #endif
-		if (!path.EndsWith ("/")) {
-			path += "/";
-		}
-		path += "traces";
-		if (debug) {
-			Debug.Log ("Storing traces in " + path);
-		}
+        if (!path.EndsWith("/"))
+        {
+            path += "/";
+        }
+        path += "traces";
+        if (debug)
+        {
+            Debug.Log("Storing traces in " + path);
+        }
 
-		return path;
-	}
-	
-	public void Update ()
-	{
-		float delta = Time.deltaTime;
-		if (flushInterval >= 0) {
-			nextFlush -= delta;
-			if (nextFlush <= 0) {
-				flushRequested = true;
-			}
-			while (nextFlush <= 0) {
-				nextFlush += flushInterval;
-			}
-		}
+        return path;
+    }
 
-		if (checkInterval >= 0) {
-			nextCheck -= delta;
-			if (!useMainStorage && !connecting && nextCheck <= 0 && mainStorage.IsAvailable ()) {
-				connecting = true;
-				if (debug) {
-					Debug.Log ("Starting main storage");
-				}
-				mainStorage.Start (startListener);
-			}
-			while (nextCheck <= 0) {
-				nextCheck += checkInterval;
-			}
-		}
+    public void Update()
+    {
+        float delta = Time.deltaTime;
+        if (flushInterval >= 0)
+        {
+            nextFlush -= delta;
+            if (nextFlush <= 0)
+            {
+                flushRequested = true;
+            }
+            while (nextFlush <= 0)
+            {
+                nextFlush += flushInterval;
+            }
+        }
 
-		if (connected && flushRequested) {
-			Flush ();
-		}
-	}
+        if (checkInterval >= 0)
+        {
+            nextCheck -= delta;
+            if (!useMainStorage && !connecting && nextCheck <= 0 && mainStorage.IsAvailable())
+            {
+                connecting = true;
+                if (debug)
+                {
+                    Debug.Log("Starting main storage");
+                }
+                mainStorage.Start(startListener);
+            }
+            while (nextCheck <= 0)
+            {
+                nextCheck += checkInterval;
+            }
+        }
 
-	/// <summary>
-	/// Flush the traces queue in the next update.
-	/// </summary>
-	public void RequestFlush ()
-	{
-		flushRequested = true;
-	}
+        if (connected && flushRequested)
+        {
+            Flush();
+        }
+    }
 
-	private void Connect ()
-	{
-		if (!connected && !connecting) {
-			connecting = true;
-			if (debug) {
-				Debug.Log ("Starting local storage ");
-			}
-			
-			if (mainStorage.IsAvailable ()) {
-				mainStorage.Start (startListener);
-			} 
-			if (backupStorage != null) {
-				backupStorage.Start (startLocalStorageListener);
-			}
-		}
-	}
-	
-	private void Flush ()
-	{
-		if (!connected && !connecting) {
-			if (debug) {
-				Debug.Log ("Not connected. Trying to connect");
-			}
-			Connect ();
-		} else if (queue.Count > 0 && !sending) {
-			if (debug) {
-				Debug.Log ("Flushing...");
-			}
-			sending = true;
-			sent.AddRange (queue);
-			queue.Clear ();
-			flushRequested = false;
-			string data = "";
-			if (useMainStorage == false && backupStorage != null) {
-				if (debug) {
-					Debug.Log ("Sending traces via aux storage");
-				}
-				backupStorage.Send (GetRawTraces (), flushListener);
-			} else {
-				if (debug) {
-					Debug.Log ("Sending traces via main storage");
-				}
-				allTraces.Clear();
-				allTraces.AddRange (sent);
-				if(backupStorage!=null)
-					allTraces.AddRange (backupStorage.RecoverData ());
-				data = traceFormatter.Serialize (allTraces);
-				mainStorage.Send(data, flushListener);
-			}
-			if (debug) {
-				Debug.Log(data);
-			}
-		}
-	}
+    /// <summary>
+    /// Flush the traces queue in the next update.
+    /// </summary>
+    public void RequestFlush()
+    {
+        flushRequested = true;
+    }
 
-	private string GetRawTraces ()
-	{
-		string data = "";
-		foreach (String trace in sent)
-		{
-			data += trace + ";";
-		}
-		return data;
-	}
+    private void Connect()
+    {
+        if (!connected && !connecting)
+        {
+            connecting = true;
+            if (debug)
+            {
+                Debug.Log("Starting local storage ");
+            }
 
-	private void Sent (bool error)
-	{
-		if (!error) {
-			if (debug) {
-				Debug.Log ("Traces received by storage.");
-			}
-			sent.Clear ();
-			if (useMainStorage) {
-				backupStorage.CleanFile();
-			}
-		} else {
-			if (debug) {
-				Debug.LogError ("Traces dispatch failed");
-			}
-			if (useMainStorage && backupStorage != null) {
-				useMainStorage = false;
-				backupStorage.Send (GetRawTraces(), flushListener);
-			}
-		}
-		sending = false;
-	}
+            if (mainStorage.IsAvailable())
+            {
+                mainStorage.Start(startListener);
+            }
+            if (backupStorage != null)
+            {
+                backupStorage.Start(startLocalStorageListener);
+            }
+        }
+    }
 
-	public class StartLocalStorageListener : Net.IRequestListener
-	{
-		protected Tracker tracker;
-		private ITraceFormatter traceFormatter;
+    private void Flush()
+    {
+        if (!connected && !connecting)
+        {
+            if (debug)
+            {
+                Debug.Log("Not connected. Trying to connect");
+            }
+            Connect();
+        }
+        else if (queue.Count > 0 && !sending)
+        {
+            if (debug)
+            {
+                Debug.Log("Flushing...");
+            }
+            sending = true;
+            sent.AddRange(queue);
+            queue.Clear();
+            flushRequested = false;
+            string data = "";
+            if (useMainStorage == false && backupStorage != null)
+            {
+                if (debug)
+                {
+                    Debug.Log("Sending traces via aux storage");
+                }
+                backupStorage.Send(GetRawTraces(), flushListener);
+            }
+            else {
+                if (debug)
+                {
+                    Debug.Log("Sending traces via main storage");
+                }
+                allTraces.Clear();
+                allTraces.AddRange(sent);
+                if (backupStorage != null)
+                    allTraces.AddRange(backupStorage.RecoverData());
+                data = traceFormatter.Serialize(allTraces);
+                mainStorage.Send(data, flushListener);
+            }
+            if (debug)
+            {
+                Debug.Log(data);
+            }
+        }
+    }
 
-		public StartLocalStorageListener (Tracker tracker)
-		{
-			this.tracker = tracker;
-		}
+    private string GetRawTraces()
+    {
+        string data = "";
+        foreach (String trace in sent)
+        {
+            data += trace + ";";
+        }
+        return data;
+    }
 
-		public void Result(string data)
-		{
-			if (tracker.debug)
-			{
-				Debug.Log ("Start local storage successfull");
-			}
-			tracker.SetConnected (true);
-		}
+    private void Sent(bool error)
+    {
+        if (!error)
+        {
+            if (debug)
+            {
+                Debug.Log("Traces received by storage.");
+            }
+            sent.Clear();
+            if (useMainStorage && backupStorage != null)
+            {
+                backupStorage.CleanFile();
+            }
+        }
+        else {
+            if (debug)
+            {
+                Debug.LogError("Traces dispatch failed");
+            }
+            if (useMainStorage && backupStorage != null)
+            {
+                useMainStorage = false;
+                backupStorage.Send(GetRawTraces(), flushListener);
+            }
+        }
+        sending = false;
+    }
 
-		public void Error(string error)
-		{
-			if (tracker.debug)
-			{
-				Debug.Log("Error " + error);
-			}
-			tracker.SetConnected (false);
-		}
-	}
+    public class StartLocalStorageListener : Net.IRequestListener
+    {
+        protected Tracker tracker;
+        private ITraceFormatter traceFormatter;
 
-	public class StartListener : Net.IRequestListener
-	{
-		protected Tracker tracker;
-		private ITraceFormatter traceFormatter;
+        public StartLocalStorageListener(Tracker tracker)
+        {
+            this.tracker = tracker;
+        }
 
-		public StartListener (Tracker tracker)
-		{
-			this.tracker = tracker;
-		}
+        public void Result(string data)
+        {
+            if (tracker.debug)
+            {
+                Debug.Log("Start local storage successfull");
+            }
+            tracker.SetConnected(true);
+        }
 
-		public void SetTraceFormatter (ITraceFormatter traceFormatter)
-		{
-			this.traceFormatter = traceFormatter;
-		}
+        public void Error(string error)
+        {
+            if (tracker.debug)
+            {
+                Debug.Log("Error " + error);
+            }
+            tracker.SetConnected(false);
+        }
+    }
 
-		public void Result (string data)
-		{
-			if (tracker.debug) {
-				Debug.Log ("Start main storage successfull");
-			}
-			if (!String.IsNullOrEmpty(data)) {
-				try {
-					JSONNode dict = JSONNode.Parse (data);
-					this.ProcessData (dict);
-				} catch (Exception e) {
-					Debug.LogError (e);
-				}
-			}
-			tracker.SetMainStorageConnected (true);
-		}
+    public class StartListener : Net.IRequestListener
+    {
+        protected Tracker tracker;
+        private ITraceFormatter traceFormatter;
 
-		public void Error (string error)
-		{
-			if (tracker.debug) {
-				Debug.Log ("Error " + error);
-			}
-			tracker.SetMainStorageConnected (false);
-		}
+        public StartListener(Tracker tracker)
+        {
+            this.tracker = tracker;
+        }
 
-		protected virtual void ProcessData (JSONNode data)
-		{
-			traceFormatter.StartData (data);
-		}
-	}
+        public void SetTraceFormatter(ITraceFormatter traceFormatter)
+        {
+            this.traceFormatter = traceFormatter;
+        }
 
-	public class FlushListener : Net.IRequestListener
-	{
+        public void Result(string data)
+        {
+            if (tracker.debug)
+            {
+                Debug.Log("Start main storage successfull");
+            }
+            if (!String.IsNullOrEmpty(data))
+            {
+                try
+                {
+                    JSONNode dict = JSONNode.Parse(data);
+                    this.ProcessData(dict);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e);
+                }
+            }
+            tracker.SetMainStorageConnected(true);
+        }
 
-		private Tracker tracker;
+        public void Error(string error)
+        {
+            if (tracker.debug)
+            {
+                Debug.Log("Error " + error);
+            }
+            tracker.SetMainStorageConnected(false);
+        }
 
-		public FlushListener (Tracker tracker)
-		{
-			this.tracker = tracker;
-		}
+        protected virtual void ProcessData(JSONNode data)
+        {
+            traceFormatter.StartData(data);
+        }
+    }
 
-		public void Result (string data)
-		{
-			tracker.Sent (false);
-		}
+    public class FlushListener : Net.IRequestListener
+    {
 
-		public void Error (string error)
-		{
-			tracker.Sent (true);
-		}
-	}
+        private Tracker tracker;
 
-	/* Traces */
+        public FlushListener(Tracker tracker)
+        {
+            this.tracker = tracker;
+        }
 
-	/// <summary>
-	/// Adds a trace to the queue.
-	/// </summary>
-	/// <param name="trace">A comma separated string with the values of the trace</param>
-	public void Trace (string trace)
-	{
+        public void Result(string data)
+        {
+            tracker.Sent(false);
+        }
 
-		trace = Math.Round (System.DateTime.Now.ToUniversalTime ().Subtract (START_DATE).TotalMilliseconds) + "," + trace;
-		if (debug) {
-			Debug.Log ("'" + trace + "' added to the queue.");
-		}
-        if(extensions.Count > 0)
+        public void Error(string error)
+        {
+            tracker.Sent(true);
+        }
+    }
+
+    /* Traces */
+
+    /// <summary>
+    /// Adds a trace to the queue.
+    /// </summary>
+    /// <param name="trace">A comma separated string with the values of the trace</param>
+    public void Trace(string trace)
+    {
+
+        trace = Math.Round(System.DateTime.Now.ToUniversalTime().Subtract(START_DATE).TotalMilliseconds) + "," + trace;
+        if (debug)
+        {
+            Debug.Log("'" + trace + "' added to the queue.");
+        }
+        if (extensions.Count > 0)
         {
             string extContent = "";
             foreach (KeyValuePair<string, System.Object> e in extensions)
@@ -427,21 +466,22 @@ public class Tracker : MonoBehaviour
             trace = trace + "," + extContent;
             extensions.Clear();
         }
-		queue.Add (trace);
-	}
+        queue.Add(trace);
+    }
 
-	/// <summary>
-	/// Adds a trace with the specified values
-	/// </summary>
-	/// <param name="values">Values of the trace.</param>
-	public void Trace (params string[] values)
-	{
-		string result = "";
-		foreach (string value in values) {
-			result += value + ",";
-		}
-		Trace (result);
-	}
+    /// <summary>
+    /// Adds a trace with the specified values
+    /// </summary>
+    /// <param name="values">Values of the trace.</param>
+    public void Trace(params string[] values)
+    {
+        string result = "";
+        foreach (string value in values)
+        {
+            result += value + ",";
+        }
+        Trace(result);
+    }
 
     public enum Verb
     {
@@ -533,11 +573,14 @@ public class Tracker : MonoBehaviour
     public void setVar(string id, string value)
     {
         setExtension(id, value);
-    }    
+    }
 
     public void setExtension(string key, System.Object value)
     {
-        extensions.Add(key, value);
+        if (extensions.ContainsKey(key))
+            extensions[key] = value;
+        else
+            extensions.Add(key, value);
     }
 }
 
