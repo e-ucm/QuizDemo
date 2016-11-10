@@ -1,3 +1,20 @@
+/*
+ * Copyright 2016 e-UCM (http://www.e-ucm.es/)
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * This project has received funding from the European Union’s Horizon
+ * 2020 research and innovation programme under grant agreement No 644187.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0 (link is external)
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 //#define USE_SharpZipLib
 #if !UNITY_WEBPLAYER
 #define USE_FileIO
@@ -63,6 +80,9 @@ namespace SimpleJSON
  
     public class JSONNode
     {
+        protected enum BasicType { INT, FLOAT, DOUBLE, BOOL, STRING };
+        protected BasicType type = BasicType.STRING;
+
         #region common interface
         public virtual void Add(string aKey, JSONNode aItem){ }
         public virtual JSONNode this[int aIndex]   { get { return null; } set { } }
@@ -114,6 +134,7 @@ namespace SimpleJSON
             set
             {
                 Value = value.ToString();
+                type = BasicType.INT;
             }
         }
         public virtual float AsFloat
@@ -128,6 +149,7 @@ namespace SimpleJSON
             set
             {
                 Value = value.ToString();
+                type = BasicType.FLOAT;
             }
         }
         public virtual double AsDouble
@@ -142,6 +164,7 @@ namespace SimpleJSON
             set
             {
                 Value = value.ToString();
+                type = BasicType.DOUBLE;
             }
         }
         public virtual bool AsBool
@@ -156,6 +179,7 @@ namespace SimpleJSON
             set
             {
                 Value = (value)?"true":"false";
+                type = BasicType.BOOL;
             }
         }
         public virtual JSONArray AsArray
@@ -812,6 +836,7 @@ namespace SimpleJSON
  
     public class JSONData : JSONNode
     {
+
         private string m_Data;
         public override string Value
         {
@@ -824,24 +849,43 @@ namespace SimpleJSON
         }
         public JSONData(float aData)
         {
+            type = BasicType.FLOAT;
             AsFloat = aData;
         }
         public JSONData(double aData)
         {
+            type = BasicType.DOUBLE;
             AsDouble = aData;
         }
         public JSONData(bool aData)
         {
+            type = BasicType.BOOL;
             AsBool = aData;
         }
         public JSONData(int aData)
         {
+            type = BasicType.INT;
             AsInt = aData;
         }
  
         public override string ToString()
         {
-            return "\"" + Escape(m_Data) + "\"";
+            string val = m_Data != null ? m_Data : Value;
+
+            switch (type)
+            {
+                case BasicType.BOOL:
+                    return AsBool ? "true" : "false";
+                case BasicType.INT:
+                    return AsInt.ToString();
+                case BasicType.DOUBLE:
+                    return AsDouble.ToString();
+                case BasicType.FLOAT:
+                    return AsFloat.ToString();
+                case BasicType.STRING:
+                default:
+                    return "\"" + Escape(val) + "\"";
+            }
         }
         public override string ToString(string aPrefix)
         {
@@ -995,6 +1039,7 @@ namespace SimpleJSON
             set
             {
                 JSONData tmp = new JSONData(value);
+                type = BasicType.INT;
                 Set(tmp);
             }
         }
@@ -1009,6 +1054,7 @@ namespace SimpleJSON
             set
             {
                 JSONData tmp = new JSONData(value);
+                type = BasicType.FLOAT;
                 Set(tmp);
             }
         }
@@ -1017,6 +1063,7 @@ namespace SimpleJSON
             get
             {
                 JSONData tmp = new JSONData(0.0);
+                type = BasicType.DOUBLE;
                 Set(tmp);
                 return 0.0;
             }
@@ -1031,12 +1078,14 @@ namespace SimpleJSON
             get
             {
                 JSONData tmp = new JSONData(false);
+                type = BasicType.BOOL;
                 Set(tmp);
                 return false;
             }
             set
             {
                 JSONData tmp = new JSONData(value);
+                type = BasicType.STRING;
                 Set(tmp);
             }
         }

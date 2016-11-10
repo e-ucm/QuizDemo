@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-using System.Collections;
+using UnityEngine.SceneManagement;
 
 public class AnsQuestion : MonoBehaviour
 {
@@ -13,7 +13,7 @@ public class AnsQuestion : MonoBehaviour
 		if (result)
 		{
 			Score.S.AddScore(correctScore);
-			Application.LoadLevel(nextScene);
+            SceneManager.LoadScene(nextScene);
             Tracker.T.accessible.Accessed(nextScene);
 
         }
