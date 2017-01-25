@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+using UnityEngine;
 using System.Collections.Generic;
 using SimpleJSON;
 using System;
@@ -101,8 +102,19 @@ public void StartData (JSONNode data)
 		}
 
 		string result = "[";
+        int i = 0;
 		foreach (JSONNode statement in statements) {
-			result += statement.ToString () + ",";
+            try {
+                result += statement.ToJSON(0) + ",";
+            }catch(Exception ex)
+            {
+                Debug.LogError("------ TRACKER ERROR -------");
+                Debug.LogError("------ TRACE: -------");
+                Debug.LogError("Original: " + traces[i]);
+                Debug.LogError("SimpleJSON: " + statement);
+                Debug.LogError(ex.ToString());
+            }
+            i++;
 		}
 		return result.Substring (0, result.Length - 1).Replace ("[\n\t]", "").Replace (": ", ":") + "]";
 	}
