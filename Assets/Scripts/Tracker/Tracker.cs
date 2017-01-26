@@ -341,7 +341,7 @@ public class Tracker : MonoBehaviour
 		}
 		catch (Exception e)
 		{
-			Debug.Log("Error writting raw copy");
+			Debug.Log("Error writting raw copy. Exception: " + e);
 		}
 #endif
 	}
