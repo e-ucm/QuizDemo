@@ -127,7 +127,8 @@ public class Tracker : MonoBehaviour
 	{
 		switch (traceFormat) {
 		case "json":
-			this.traceFormatter = new SimpleJsonFormat ();
+				Debug.LogWarning("JSON format is discontinued, please use any other (xapi or csv)");
+				this.traceFormatter = new SimpleJsonFormat ();
 			break;
 		case "xapi":
 			this.traceFormatter = new XApiFormat ();

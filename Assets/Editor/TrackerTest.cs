@@ -14,28 +14,60 @@ public class TrackerOpened : Tracker
 
 public class TrackerTest {
 
+	private TrackerOpened t;
+
 	[Test]
-	public void EditorTest() {
+	public void ActionTraceTest() {
 
-		//Arrange
-		var gameObject = new GameObject();
-
-		//Act
-		//Try to rename the GameObject
-		var newGameObjectName = "My game object";
-		gameObject.name = newGameObjectName;
-
-		//Assert
-		//The object has a new name
-		Assert.AreEqual(newGameObjectName, gameObject.name);
-
-		TrackerOpened t = new TrackerOpened();
+		t = new TrackerOpened();
 		t.Start();
-		t.ActionTrace("Verbo", "Type", "ID");
 
- 		string traceWithoutTimestamp = t.GetQueue()[0].Substring(t.GetQueue()[0].IndexOf(',')+1);
+
+		t.ActionTrace("Verb", "Type", "ID");
+		CheckGenericTrace("Verb,Type,ID");
+		t.GetQueue().Clear();
+
+		t.ActionTrace("Verb", "Ty,pe", "ID");
+		CheckGenericTrace("Verb,Ty/,pe,ID");
+		t.GetQueue().Clear();
+
+		t.ActionTrace("Verb", "Type", "I,D");
+		CheckGenericTrace("Verb,Type,I/,D");
+		t.GetQueue().Clear();
+
+		t.ActionTrace("Ve,rb", "Type", "ID");
+		CheckGenericTrace("Ve/,rb,Type,ID");
+		t.GetQueue().Clear();
+
+		//Check that null and empty string throw a controled exception
+		Assert.Throws(typeof(NullReferenceException), delegate { t.ActionTrace(null, "Type", "ID"); });
+		Assert.Throws(typeof(NullReferenceException), delegate { t.ActionTrace("Verb", null, "ID"); });
+		Assert.Throws(typeof(NullReferenceException), delegate { t.ActionTrace("Verb", "Type", null); });
+
+		Assert.Throws(typeof(NullReferenceException), delegate { t.ActionTrace("", "Type", "ID"); });
+		Assert.Throws(typeof(NullReferenceException), delegate { t.ActionTrace("Verb", "", "ID"); });
+		Assert.Throws(typeof(NullReferenceException), delegate { t.ActionTrace("Verb", "Type", ""); });
+
+	}
+
+	[Test]
+	public void AlternativeTraceTest()
+	{
+
+		t = new TrackerOpened();
+		t.Start();
+
+
+		t.alternative.Selected("question", "alternative");
+		CheckGenericTrace("selected,alternative,question,response,alternative");
+		t.GetQueue().Clear();
+	}
+
+	private void CheckGenericTrace(String espectedValue)
+	{
+		string traceWithoutTimestamp = t.GetQueue()[0].Substring(t.GetQueue()[0].IndexOf(',') + 1);
+
+		Assert.AreEqual(traceWithoutTimestamp, espectedValue);
 		
-		Assert.AreEqual(traceWithoutTimestamp, "Verbo,Type,ID");
-
 	}
 }
