@@ -55,16 +55,7 @@ public class LocalStorage : Storage
 		requestListener.Error ("Impossible to use LocalStorage in WebGL version");
 #elif UNITY_ANDROID || UNITY_IPHONE || UNITY_STANDALONE_OSX || UNITY_STANDALONE_WIN || UNITY_STANDALONE_LINUX
 		try {
-            string tmpData = data.Replace("{\"actor", "${\"actor").Replace("[", "").Replace("]", "");
-            string[] tmpArray = tmpData.Split('$');
-            foreach (string action in tmpArray)
-            {
-                if (action != "")
-                {
-                    Log.L().AddLogLine("local: " + action);
-                }
-            }
-            File.AppendAllText (tracesFile, data);
+			File.AppendAllText (tracesFile, data);
 			requestListener.Result ("");
 		} catch (Exception e) {
 			requestListener.Error (e.Message);

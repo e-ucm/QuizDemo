@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+using UnityEngine;
 using System.Collections.Generic;
 using SimpleJSON;
 using System;
@@ -77,63 +78,104 @@ public class XApiFormat : Tracker.ITraceFormatter
         { Tracker.Extension.Progress.ToString().ToLower(), "https://w3id.org/xapi/seriousgames/extensions/progress"}
     };
 
-    private List<JSONNode> statements = new List<JSONNode> ();
-	private string objectId;
-	private JSONNode actor;
+    private List<JSONNode> statements = new List<JSONNode>();
+    private string objectId;
+    private JSONNode actor;
 
-public void StartData (JSONNode data)
-	{
-		actor = data ["actor"];
-		objectId = data ["objectId"].ToString();
-		if (!objectId.EndsWith ("/")) {
+    public void StartData(JSONNode data)
+    {
+        actor = data["actor"];
+        objectId = data["objectId"].ToString();
+        if (!objectId.EndsWith("/"))
+        {
             objectId = objectId.Replace("\"", "");
-			objectId += "/";
+            objectId += "/";
             UnityEngine.Debug.Log("objectId::: " + objectId);
+        }
+    }
+
+    public string Serialize(List<string> traces)
+    {
+        statements.Clear();
+
+        foreach (string trace in traces)
+        {
+            statements.Add(CreateStatement(trace));
+        }
+
+        string result = "[";
+        int i = 0;
+        foreach (JSONNode statement in statements)
+        {
+            try
+            {
+                result += statement.ToJSON(0) + ",";
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("------ TRACKER ERROR -------");
+                Debug.LogError("------ TRACE: -------");
+                Debug.LogError("Original: " + traces[i]);
+                Debug.LogError("SimpleJSON: " + statement);
+                Debug.LogError(ex.ToString());
+            }
+            i++;
+        }
+        return result.Substring(0, result.Length - 1).Replace("[\n\t]", "").Replace(": ", ":") + "]";
+    }
+
+    private JSONNode CreateStatement(string trace)
+    {
+		List<string> p = new List<string> ();
+
+		bool escape = false;
+		int start = 0;
+		for (int i = 0; i < trace.Length; i++) {
+			switch (trace [i]) {
+			case '/':
+				escape = true;
+				break;
+			case ',':
+				if (!escape) {
+					p.Add (trace.Substring (start, i-start).Replace("/,",","));
+					start = i + 1;
+				} else
+					escape = false;
+				break;
+			default: break;
+			}
 		}
-	}
-
-	public string Serialize (List<string> traces)
-	{
-		statements.Clear ();
-
-		foreach (string trace in traces) {
-			statements.Add (CreateStatement (trace));
-		}
-
-		string result = "[";
-		foreach (JSONNode statement in statements) {
-			result += statement.ToString () + ",";
-		}
-		return result.Substring (0, result.Length - 1).Replace ("[\n\t]", "").Replace (": ", ":") + "]";
-	}
-
-	private JSONNode CreateStatement (string trace)
-	{
-		string[] parts = trace.Split (',');
-		string timestamp = new System.DateTime (1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc).AddMilliseconds (long.Parse (parts [0])).ToString ("yyyy-MM-ddTHH:mm:ss.fffZ");
-
-		JSONNode statement = JSONNode.Parse ("{\"timestamp\": \"" + timestamp + "\"}");
-
-		if (actor != null) {
-			statement.Add ("actor", actor);		      
-		}
-		statement.Add ("verb", CreateVerb (parts [1]));
+		p.Add(trace.Substring(start).Replace("/,",","));
 
 
-		statement.Add ("object", CreateObject(parts));
 
-		if (parts.Length > 4) {
+		string[] parts = p.ToArray ();
+        string timestamp = new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc).AddMilliseconds(long.Parse(parts[0])).ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+
+        JSONNode statement = JSONNode.Parse("{\"timestamp\": \"" + timestamp + "\"}");
+
+        if (actor != null)
+        {
+            statement.Add("actor", actor);
+        }
+        statement.Add("verb", CreateVerb(parts[1]));
+
+
+        statement.Add("object", CreateObject(parts));
+
+        if (parts.Length > 4)
+        {
             // Parse extensions
 
             int extCount = parts.Length - 4;
-            if(extCount > 0 && extCount % 2 == 0)
+            if (extCount > 0 && extCount % 2 == 0)
             {
                 // Extensions come in <key, value> pairs
 
                 JSONClass extensions = new JSONClass();
                 JSONNode extensionsChild = null;
 
-                for (int i = 4; i < parts.Length; i+= 2)
+                for (int i = 4; i < parts.Length; i += 2)
                 {
                     string key = parts[i];
                     string value = parts[i + 1];
@@ -168,7 +210,7 @@ public void StartData (JSONNode data)
                     }
                     else
                     {
-                        if(extensionsChild == null)
+                        if (extensionsChild == null)
                         {
                             extensionsChild = JSONNode.Parse("{}");
                             extensions.Add("extensions", extensionsChild);
@@ -185,11 +227,11 @@ public void StartData (JSONNode data)
 
                         if (int.TryParse(value, out tint))
                             extensionsChild.Add(id, new JSONData(tint));
-                        else if(float.TryParse(value, out tfloat))
+                        else if (float.TryParse(value, out tfloat))
                             extensionsChild.Add(id, new JSONData(tfloat));
-                        else if(double.TryParse(value, out tdouble))
+                        else if (double.TryParse(value, out tdouble))
                             extensionsChild.Add(id, new JSONData(tdouble));
-                        else if(bool.TryParse(value, out tbool))
+                        else if (bool.TryParse(value, out tbool))
                             extensionsChild.Add(id, new JSONData(tbool));
                         else
                             extensionsChild.Add(id, new JSONData(value));
@@ -197,28 +239,34 @@ public void StartData (JSONNode data)
                 }
                 statement.Add("result", extensions);
             }
-		}
+        }
 
         return statement;
-	}
+    }
 
-	private JSONNode CreateVerb (string ev)
-	{
+    private JSONNode CreateVerb(string ev)
+    {
 
         string id = ev;
         verbIds.TryGetValue(ev, out id);
 
-		JSONNode verb = JSONNode.Parse ("{id: }");
-		verb ["id"] = id;
+        JSONNode verb = JSONNode.Parse("{id: }");
 
-		return verb;
-	}
+		if (id != null)
+			verb ["id"] = id;
+		else {
+			Debug.LogWarning ("xAPI: Unknown definition for verb: " + ev);
+			verb ["id"] = ev;
+		}
 
-	private JSONNode CreateObject (string[] parts)
-	{
-		string type = parts [2];
+        return verb;
+    }
 
+    private JSONNode CreateObject(string[] parts)
+    {
+        string type = parts[2];
         string id = parts[3];
+
         string typeKey = type;
         objectIds.TryGetValue(type, out typeKey);
 
@@ -226,12 +274,17 @@ public void StartData (JSONNode data)
         obj["id"] = objectId + id;
 
         JSONNode definition = JSONNode.Parse("{type: }");
-        definition["type"] = typeKey;
+		if (typeKey != null)
+			definition ["type"] = typeKey;
+		else {
+			Debug.LogWarning ("xAPI: Unknown definition for target type: " + type);
+			definition ["type"] = type;
+		}
 
         obj.Add("definition", definition);
 
         return obj;
-	}
+    }
 }
 
 

@@ -94,16 +94,7 @@ public class NetStorage : Storage
 
 	public void Send (String data, Net.IRequestListener flushListener)
 	{
-        string tmpData = data.Replace("{\"actor", "${\"actor").Replace("[", "").Replace("]", "");
-        string[] tmpArray = tmpData.Split('$');
-        foreach (string action in tmpArray)
-        {
-            if (action != "")
-            {
-                Log.L().AddLogLine("net: " + action);
-            }
-        }
-        net.POST (host + track, System.Text.Encoding.UTF8.GetBytes (data), trackHeaders, flushListener);
+		net.POST (host + track, System.Text.Encoding.UTF8.GetBytes (data), trackHeaders, flushListener);
 	}
 
 	private void SetAuthToken (string authToken)
