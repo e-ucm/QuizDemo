@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class AnsQuestion : MonoBehaviour
@@ -13,14 +14,20 @@ public class AnsQuestion : MonoBehaviour
 		if (result)
 		{
 			Score.S.AddScore(correctScore);
-            SceneManager.LoadScene(nextScene);
-            Tracker.T.accessible.Accessed(nextScene);
+			StartCoroutine(WaitForIt(0.2F));
+			Tracker.T.accessible.Accessed(nextScene);
 
         }
 		else
 		{
 			Score.S.AddScore(incorrectScore);
 		}
+	}
+
+	IEnumerator WaitForIt(float waitTime)
+	{
+		yield return new WaitForSeconds(waitTime);
+		SceneManager.LoadScene(nextScene);
 	}
 
 	public void TrackChoice(string optionId)
