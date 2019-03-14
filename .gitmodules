@@ -1,0 +1,3 @@
+[submodule "Assets/Scripts/unity-tracker"]
+	path = Assets/Scripts/unity-tracker
+	url = https://github.com/e-ucm/unity-tracker

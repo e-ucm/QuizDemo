@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using RAGE.Analytics;
 
 public class StartGame : MonoBehaviour
 {

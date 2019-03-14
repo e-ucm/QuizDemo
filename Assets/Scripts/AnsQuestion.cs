@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using RAGE.Analytics;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class AnsQuestion : MonoBehaviour

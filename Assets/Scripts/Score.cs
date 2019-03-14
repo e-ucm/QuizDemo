@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using RAGE.Analytics;
+using UnityEngine;
 
 public class Score : MonoBehaviour {
 
